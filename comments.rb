@@ -1,5 +1,6 @@
 require 'sinatra'
 require 'ripple'
+require 'yajl'
 
 class Comment
   include Ripple::Document
@@ -7,6 +8,14 @@ class Comment
   property :email, String, :presence => true
   property :url, String
   property :body, String, :presence => true
+
+  def to_json
+    attributes.merge("id" => key)
+  end
+
+  def self.all_to_json
+    all.collect(&:to_json)
+  end
 end
 
 post '/comments' do
@@ -21,6 +30,6 @@ end
 
 get '/comments.js' do
   js = params["callback"].to_s
-  comments_json = Comment.all.collect{|comment| "{\"body\":\"#{comment.body}\"}" }.join(',')
-  js += "([#{comments_json}])"
+  json = Yajl::Encoder.encode(Comment.all_to_json)
+  js += "(#{json})"
 end
